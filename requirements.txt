@@ -1,0 +1,9 @@
+torch
+hdf5storage
+einops
+scikit-learn
+scipy
+numpy
+opencv-python
+matplotlib
+tensorboard

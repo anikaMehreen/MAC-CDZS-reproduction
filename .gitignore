@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+
+# Training artifacts -- large, regenerable by re-running the scripts.
+# Never commit these to GitHub.
+ckpt_GCC/
+log/
+*.pth
+*.pkl
+*.mat
+
+# OS/editor cruft
+.DS_Store
+.ipynb_checkpoints/
