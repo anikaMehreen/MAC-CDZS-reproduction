@@ -213,26 +213,32 @@ def get_train_test_loader(Data_Band_Scaler, GroundTruth, class_num, shot_num_per
     else:
         aug_imdb = pickle.load(open(aug_name, "rb"))
 
-    def neighbour(i_r, i_c, j_r, j_c):
-        return ((i_r - 1 == j_r) or (i_r + 1 == j_r)) and ((i_c - 1 == j_c) or (i_c + 1 == j_c))
-
+    # FIX: replaced the original brute-force O(n^2) neighbor search with a
+    # KD-tree based version. Produces the EXACT SAME edge set (verified by
+    # direct comparison against the brute-force version on multiple random
+    # test cases) but scales near-linearly instead of quadratically -- the
+    # original caused real out-of-memory crashes (SIGKILL) on datasets
+    # larger than Indian Pines, such as Salinas (~21,000 R-task nodes vs.
+    # Indian Pines' ~3,300). See train_stage1.py for the detailed comment
+    # explaining this fix; identical logic is used here.
     num_nodes = aug_imdb['Row'].shape[0]
     from collections import defaultdict
+    from scipy.spatial import cKDTree
     adj_lists = defaultdict(set)
     adj_name = checkpoints_path + '/adj_' + str(iDataSet) + '.pkl'
     if not os.path.exists(adj_name):
-        for nod_i in range(num_nodes):
-            nod_r, nod_c = aug_imdb['Row'][nod_i], aug_imdb['Clo'][nod_i]
-            rows = aug_imdb['Row'][nod_i + 1:]
-            clos = aug_imdb['Clo'][nod_i + 1:]
-            row_index = np.where((rows <= (nod_r + 1)) & (rows >= (nod_r - 1)))[0]
-            clo_index = np.where((clos <= (nod_c + 1)) & (clos >= (nod_c - 1)))[0]
-            inter = np.intersect1d(row_index, clo_index)
-            for nod_j in range(len(inter)):
-                loc_j = (nod_i + inter[nod_j] + 1)
-                j_row, j_clo = aug_imdb['Row'][loc_j], aug_imdb['Clo'][loc_j]
-                if neighbour(nod_r, nod_c, j_row, j_clo):
-                    adj_lists[nod_i].add(loc_j)
+        coords = np.stack([aug_imdb['Row'], aug_imdb['Clo']], axis=1).astype(np.float64)
+        tree = cKDTree(coords)
+        pairs = tree.query_pairs(r=1.5, p=np.inf, output_type='ndarray')
+
+        if len(pairs) > 0:
+            i_idx, j_idx = pairs[:, 0], pairs[:, 1]
+            dr = aug_imdb['Row'][j_idx] - aug_imdb['Row'][i_idx]
+            dc = aug_imdb['Clo'][j_idx] - aug_imdb['Clo'][i_idx]
+            is_diagonal = (np.abs(dr) == 1) & (np.abs(dc) == 1)
+            for i, j in zip(i_idx[is_diagonal], j_idx[is_diagonal]):
+                adj_lists[int(i)].add(int(j))
+
         pickle.dump(adj_lists, open(adj_name, 'wb'))
     else:
         adj_lists = pickle.load(open(adj_name, "rb"))
