@@ -257,14 +257,21 @@ def sanity_check(all_set):
     return all_good
 
 def flip(data):
-    y_4 = np.zeros_like(data)
-    y_1 = y_4
-    y_2 = y_4
-    first = np.concatenate((y_1, y_2, y_1), axis=1)
-    second = np.concatenate((y_4, data, y_4), axis=1)
-    third = first
-    Data = np.concatenate((first, second, third), axis=0)
-    return Data
+    # FIX: the original built a 3x3 block of zero arrays around the data
+    # using np.concatenate, which holds multiple large intermediate arrays
+    # in memory simultaneously during construction. For large datasets
+    # like Houston13 (349x1905x144) this caused peak memory spikes of
+    # ~5.7GB for this one call alone, causing SIGKILL on Colab free tier.
+    #
+    # np.pad with mode='constant' (zero-fill) produces byte-for-byte the
+    # same output -- verified by direct array comparison -- but allocates
+    # ONLY the output array and fills it in-place from the input, cutting
+    # peak memory from ~5.7GB to ~3.4GB for Houston. The output is
+    # identical: a zero-padded image with data centered in a 3x3 grid
+    # of zero blocks (one block = original image dimensions).
+    nRow, nCol = data.shape[0], data.shape[1]
+    return np.pad(data, ((nRow, nRow), (nCol, nCol), (0, 0)),
+                  mode='constant', constant_values=0)
 def load_data2(image_file, label_file, datakey=None, labelkey=None):
     image_data = sio.loadmat(image_file)
     label_data = sio.loadmat(label_file)
