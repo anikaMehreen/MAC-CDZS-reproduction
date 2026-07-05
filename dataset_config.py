@@ -37,39 +37,39 @@ entirely; you don't need to supply it for new datasets.
 """
 
 # Change this to wherever your Drive / data folder actually is.
-DRIVE_ROOT = '/content/drive/MyDrive/MAC-CDZS'
+DRIVE_ROOT = '/content/drive/MyDrive/MAC-CDZS_data'
 
 DATASETS = {
     'IP': {  # Indian Pines
         'class_num': 16, 'IR_task': 10, 'R_task': 6,
         'channel': 200,
-        'data_path': f'{DRIVE_ROOT}/indian_pines_corrected.mat',
-        'label_path': f'{DRIVE_ROOT}/indian_pines_gt.mat',
+        'data_path': f'{DRIVE_ROOT}/IndianPines/indian_pines_corrected.mat',
+        'label_path': f'{DRIVE_ROOT}/IndianPines/indian_pines_gt.mat',
         'data_key': None, 'label_key': None,
     },
     'SA': {  # Salinas
         'class_num': 16, 'IR_task': 10, 'R_task': 6,
         'channel': 204,
-        'data_path': f'{DRIVE_ROOT}/salinas_corrected.mat',
-        'label_path': f'{DRIVE_ROOT}/salinas_gt.mat',
+        'data_path': f'{DRIVE_ROOT}/Salinas/salinas_corrected.mat',
+        'label_path': f'{DRIVE_ROOT}/Salinas/salinas_gt.mat',
         'data_key': None, 'label_key': None,
     },
     'UP': {  # Pavia University
         'class_num': 9, 'IR_task': 5, 'R_task': 4,
         'channel': 103,
-        'data_path': f'{DRIVE_ROOT}/paviaU.mat',
-        'label_path': f'{DRIVE_ROOT}/paviaU_gt.mat',
+        'data_path': f'{DRIVE_ROOT}/PaviaU/paviaU.mat',
+        'label_path': f'{DRIVE_ROOT}/PaviaU/paviaU_gt.mat',
         'data_key': None, 'label_key': None,
     },
-    'Ho': {  # Houston13
+    'Ho': {  # Houston
         'class_num': 15, 'IR_task': 10, 'R_task': 5,
         'channel': 144,
-        'data_path': f'{DRIVE_ROOT}/Houston13.mat',
-        'label_path': f'{DRIVE_ROOT}/Houston13_7gt.mat',
+        'data_path': '/content/drive/MyDrive/MAC-CDZS_data/Houston/Houston.mat',
+        'label_path': '/content/drive/MyDrive/MAC-CDZS_data/Houston/Houston_GT.mat',
         # Houston13's .mat file uses non-standard key names, confirmed by
         # trial and error against the actual file -- everything else
         # auto-detects fine without these.
-        'data_key': 'ori_data', 'label_key': 'map',
+        'data_key': 'Houston', 'label_key': 'Houston_GT',
     },
 
     # --- Add your own dataset below, following the same pattern. ---
