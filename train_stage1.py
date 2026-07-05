@@ -67,7 +67,7 @@ test_label = cfg['label_path']
 checkpoints_path = f'./ckpt_GCC/{Target_name}_seed{SEED_INDEX}'
 log_path = f'./log/GCC/{Target_name}_seed{SEED_INDEX}'
 
-DRIVE_ROOT = '/content/drive/MyDrive/MAC-CDZS'
+DRIVE_ROOT = '/content/drive/MyDrive/MAC-CDZS_data'
 CHIKUSEI_PICKLE = f'{DRIVE_ROOT}/Chikusei_imdb_128.pickle'
 
 # How target classes get split into IR (few-shot) vs R (zero-shot):
@@ -185,16 +185,22 @@ def get_train_test_loader(Data_Band_Scaler, GroundTruth, class_num, shot_num_per
     [nRow, nColumn, nBand] = Data_Band_Scaler.shape
 
     num_class = int(np.max(GroundTruth))
-    data_band_scaler = self_utils.flip(Data_Band_Scaler)
-    groundtruth = self_utils.flip(GroundTruth)
+    # FIX: the original code called self_utils.flip() which creates a
+    # 3x-in-each-dimension zero-padded version of the image (3*nRow x
+    # 3*nCol) and then IMMEDIATELY cropped just the HalfWidth-pixel border
+    # around the original image from it. At Houston13 scale (349x1905x144)
+    # this temporary 3x array alone needs 3.45GB, causing SIGKILL on Colab
+    # before training even started. But the crop always produces exactly
+    # the same result as directly padding with HalfWidth zeros -- verified
+    # by byte-level array comparison before this fix was adopted.
+    # Direct np.pad only ever allocates the 0.39GB output, not the 3.45GB
+    # intermediate, a 9x reduction in peak memory for this step.
+    HalfWidth = PATCHSIZE_half
+    G    = np.pad(GroundTruth,      ((HalfWidth, HalfWidth), (HalfWidth, HalfWidth)),          mode='constant')
+    data = np.pad(Data_Band_Scaler, ((HalfWidth, HalfWidth), (HalfWidth, HalfWidth), (0, 0)), mode='constant')
     del Data_Band_Scaler, GroundTruth
 
-    HalfWidth = PATCHSIZE_half
-    G = groundtruth[nRow - HalfWidth:2 * nRow + HalfWidth, nColumn - HalfWidth:2 * nColumn + HalfWidth]
-    data = data_band_scaler[nRow - HalfWidth:2 * nRow + HalfWidth, nColumn - HalfWidth:2 * nColumn + HalfWidth, :]
-
     [Row, Column] = np.nonzero(G)
-    del data_band_scaler, groundtruth
 
     nSample = np.size(Row)
     print('number of sample', nSample)
