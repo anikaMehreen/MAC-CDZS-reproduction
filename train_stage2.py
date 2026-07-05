@@ -43,7 +43,7 @@ torch.cuda.set_device(0)  # FIX (bug #4): original hardcoded device 1.
 # ============================================================
 # CONFIGURATION -- must match the train_stage1.py run you're building on
 # ============================================================
-TARGET_NAME = 'IP'
+TARGET_NAME = 'Ho'
 SEED_INDEX = 0
 
 SEEDS = [1324, 1223, 1226, 1235, 1233, 1229, 12, 1330, 1320, 1320]
@@ -96,15 +96,14 @@ def get_train_test_loader(Data_Band_Scaler, GroundTruth, class_num, shot_num_per
     print(Data_Band_Scaler.shape)
     [nRow, nColumn, nBand] = Data_Band_Scaler.shape
 
-    data_band_scaler = self_utils.flip(Data_Band_Scaler)
-    groundtruth = self_utils.flip(GroundTruth)
-    del Data_Band_Scaler, GroundTruth
-
+    # FIX: same as train_stage1.py -- see comment there for full explanation.
+    # flip() + crop is equivalent to direct np.pad(HalfWidth), verified
+    # byte-for-byte. Direct pad uses 0.39GB at Houston scale vs 3.45GB.
     HalfWidth = PATCHSIZE_half
-    G = groundtruth[nRow - HalfWidth:2 * nRow + HalfWidth, nColumn - HalfWidth:2 * nColumn + HalfWidth]
-    data = data_band_scaler[nRow - HalfWidth:2 * nRow + HalfWidth, nColumn - HalfWidth:2 * nColumn + HalfWidth, :]
+    G    = np.pad(GroundTruth,      ((HalfWidth, HalfWidth), (HalfWidth, HalfWidth)),          mode='constant')
+    data = np.pad(Data_Band_Scaler, ((HalfWidth, HalfWidth), (HalfWidth, HalfWidth), (0, 0)), mode='constant')
+    del Data_Band_Scaler, GroundTruth
     [Row, Column] = np.nonzero(G)
-    del data_band_scaler, groundtruth
 
     print('number of sample', np.size(Row))
 
